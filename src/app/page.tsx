@@ -1,69 +1,325 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Plus, ExternalLink, Pencil, Trash2 } from 'lucide-react';
+
+type Application = {
+  id: string;
+  jobTitle: string;
+  company: string;
+  url: string | null;
+  appliedDate: string;
+  status: 'applied' | 'interviewing' | 'offered' | 'rejected';
+};
+
+export default function JobTracker() {
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [openCreate, setOpenCreate] = useState(false);
+  const [editingApp, setEditingApp] = useState<Application | null>(null);
+
+  const [formData, setFormData] = useState<{
+    jobTitle: string;
+    company: string;
+    url: string;
+    status: Application['status'];
+  }>({
+    jobTitle: '',
+    company: '',
+    url: '',
+    status: 'applied',
+  });
+
+  const fetchApplications = async () => {
+    const res = await fetch('/api/applications');
+    const data = await res.json();
+    setApplications(data);
+  };
+
+  useEffect(() => {
+    fetchApplications();
+  }, []);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await fetch('/api/applications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    });
+    setOpenCreate(false);
+    setFormData({ jobTitle: '', company: '', url: '', status: 'applied' });
+    fetchApplications();
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingApp) return;
+
+    await fetch('/api/applications', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(editingApp),
+    });
+
+    setEditingApp(null);
+    fetchApplications();
+  };
+
+  const handleDelete = async (id: string) => {
+    await fetch(`/api/applications?id=${id}`, {
+      method: 'DELETE',
+    });
+    setApplications((prev) => prev.filter((app) => app.id !== id));
+  };
+
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    await fetch('/api/applications', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status: newStatus }),
+    });
+
+    setApplications((prev) =>
+      prev.map((app) => (app.id === id ? { ...app, status: newStatus as Application['status'] } : app))
+    );
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'offered':
+        return <Badge className="bg-green-600">Offered</Badge>;
+      case 'interviewing':
+        return <Badge className="bg-blue-600">Interviewing</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive">Rejected</Badge>;
+      default:
+        return <Badge variant="secondary">Applied</Badge>;
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="max-w-5xl mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Job Tracker</h1>
+          <p className="text-muted-foreground text-sm">Keep track of your active job applications.</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+
+        <Dialog open={openCreate} onOpenChange={setOpenCreate}>
+          <DialogTrigger render={<Button className="flex items-center gap-2" />}>
+            <Plus className="w-4 h-4" /> Add Application
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Application</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Job Title</label>
+                <Input
+                  required
+                  value={formData.jobTitle}
+                  onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
+                  placeholder="Software Engineer"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Company</label>
+                <Input
+                  required
+                  value={formData.company}
+                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                  placeholder="Acme Corp"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Posting URL</label>
+                <Input
+                  type="url"
+                  value={formData.url}
+                  onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                  placeholder="https://..."
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Status</label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(val) =>
+                    val && setFormData({ ...formData, status: val as Application['status'] })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="applied">Applied</SelectItem>
+                    <SelectItem value="interviewing">Interviewing</SelectItem>
+                    <SelectItem value="offered">Offered</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button type="submit" className="w-full">
+                Save Application
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Applications ({applications.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Company</TableHead>
+                <TableHead>Job Title</TableHead>
+                <TableHead>Applied Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Quick Change</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {applications.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                    No applications added yet.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                applications.map((app) => (
+                  <TableRow key={app.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {app.company}
+                        {app.url && (
+                          <a
+                            href={app.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-muted-foreground hover:text-primary"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>{app.jobTitle}</TableCell>
+                    <TableCell>{new Date(app.appliedDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{getStatusBadge(app.status)}</TableCell>
+                    <TableCell>
+                      <Select
+                        value={app.status}
+                        onValueChange={(val) => val && handleStatusChange(app.id, val)}
+                      >
+                        <SelectTrigger className="w-[130px] h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="applied">Applied</SelectItem>
+                          <SelectItem value="interviewing">Interviewing</SelectItem>
+                          <SelectItem value="offered">Offered</SelectItem>
+                          <SelectItem value="rejected">Rejected</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditingApp(app)}
+                        >
+                          <Pencil className="w-4 h-4 text-muted-foreground" />
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(app.id)}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Edit Application Dialog */}
+      <Dialog open={Boolean(editingApp)} onOpenChange={(open) => !open && setEditingApp(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Application</DialogTitle>
+          </DialogHeader>
+          {editingApp && (
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Job Title</label>
+                <Input
+                  required
+                  value={editingApp.jobTitle}
+                  onChange={(e) => setEditingApp({ ...editingApp, jobTitle: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Company</label>
+                <Input
+                  required
+                  value={editingApp.company}
+                  onChange={(e) => setEditingApp({ ...editingApp, company: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Posting URL</label>
+                <Input
+                  type="url"
+                  value={editingApp.url || ''}
+                  onChange={(e) => setEditingApp({ ...editingApp, url: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Status</label>
+                <Select
+                  value={editingApp.status}
+                  onValueChange={(val) =>
+                    val && setEditingApp({ ...editingApp, status: val as Application['status'] })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="applied">Applied</SelectItem>
+                    <SelectItem value="interviewing">Interviewing</SelectItem>
+                    <SelectItem value="offered">Offered</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button type="submit" className="w-full">
+                Update Application
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

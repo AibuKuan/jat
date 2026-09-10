@@ -1,8 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Job Tracker App
+
+A full-stack job application tracking dashboard built with Next.js, Drizzle ORM, and Shadcn UI. Keep track of your active job search, update application statuses, and manage them in one clean interface.
+
+## Features
+
+- **Dashboard Overview:** View all submitted, ongoing, and completed applications at a glance.
+- **Add Applications:** Record new job listings with company details, job titles, links, and initial status.
+- **Inline Status Updates:** Instantly change application statuses (Applied, Interviewing, Offered, Rejected) from the table.
+- **Edit & Delete:** Update application details or remove outdated records via built-in dialogs.
+- **Database Integration:** Persistent data management using Drizzle ORM.
+
+## Tech Stack
+
+- **Framework:** [Next.js](https://nextjs.org) (App Router)
+- **Database / ORM:** [Drizzle ORM](https://orm.drizzle.team/)
+- **UI Components:** [Shadcn UI](https://ui.shadcn.com/) / Base UI
 
 ## Getting Started
 
-First, run the development server:
+### 1. Install Dependencies
+
+```bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+# or
+bun install
+```
+
+### 2. Configure Environment Variables
+
+Create a `.env.local` file in the root directory and add your database connection string:
+
+```env
+DATABASE_URL="your-database-connection-string"
+```
+
+### 3. Run Database Migrations
+
+Ensure your database schema is up to date with Drizzle:
+
+```bash
+npx drizzle-kit push
+```
+
+### 4. Start the Development Server
 
 ```bash
 npm run dev
@@ -14,23 +58,22 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to launch the dashboard.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## API Routes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The core logic is handled via `app/api/applications/route.ts`:
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/applications` | Fetch all job applications |
+| `POST` | `/api/applications` | Create a new job application |
+| `PUT` | `/api/applications` | Update an existing application's details |
+| `PATCH` | `/api/applications` | Quick-update an application's status |
+| `DELETE` | `/api/applications?id={id}` | Delete an application by ID |
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [Next.js Documentation](https://nextjs.org/docs) - Learn about Next.js features and App Router syntax.
+- [Drizzle ORM Documentation](https://orm.drizzle.team/docs/overview) - Explore Drizzle schema setup and queries.
+- [Shadcn UI Documentation](https://ui.shadcn.com/) - Reusable components built with Radix / Base UI and Tailwind CSS.
