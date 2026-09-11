@@ -95,16 +95,18 @@ export default function JobTracker() {
 
   const filteredApplications = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
-    return applications.filter((app) => {
-      const matchesSearch =
-        !query ||
-        app.company.toLowerCase().includes(query) ||
-        app.jobTitle.toLowerCase().includes(query);
+    return applications
+      .filter((app) => {
+        const matchesSearch =
+          !query ||
+          app.company.toLowerCase().includes(query) ||
+          app.jobTitle.toLowerCase().includes(query);
 
-      const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
+        const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
 
-      return matchesSearch && matchesStatus;
-    });
+        return matchesSearch && matchesStatus;
+      })
+      .sort((a, b) => new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime());
   }, [applications, searchQuery, statusFilter]);
 
   const stats = useMemo(() => {
@@ -285,7 +287,7 @@ export default function JobTracker() {
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="w-[240px]">Company</TableHead>
                   <TableHead>Role</TableHead>
-                  <TableHead>Applied Date</TableHead>
+                  <TableHead>Applied Date & Time</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Update Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -325,10 +327,12 @@ export default function JobTracker() {
                       </TableCell>
                       <TableCell className="text-muted-foreground font-medium">{app.jobTitle}</TableCell>
                       <TableCell className="text-muted-foreground text-xs">
-                        {new Date(app.appliedDate).toLocaleDateString(undefined, {
+                        {new Date(app.appliedDate).toLocaleString(undefined, {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
                         })}
                       </TableCell>
                       <TableCell>{getStatusBadge(app.status)}</TableCell>

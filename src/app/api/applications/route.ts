@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { jobApplications } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 
 export async function GET() {
-  const data = await db.select().from(jobApplications);
+  const data = await db
+    .select()
+    .from(jobApplications)
+    .orderBy(desc(jobApplications.appliedDate));
   return NextResponse.json(data);
 }
 
