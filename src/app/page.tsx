@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -19,35 +18,40 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import {
   Plus,
-  ExternalLink,
-  Pencil,
-  Trash2,
-  Search,
   Briefcase,
-  Building2,
   CheckCircle2,
   Clock,
   XCircle,
 } from "lucide-react";
-import { StatusBadge } from "./components/status-badge";
 import { ApplicationStatus, JobApplication } from "@/db/schema";
 import { MetricCard } from "./components/metric-card";
+import dynamic from "next/dynamic";
+
+// This table is driven entirely by client-fetched data (see fetchApplications
+// below) and has interactive, non-deterministic internals (pagination state,
+// floating-ui menus) that don't need — and don't reliably match — server
+// rendering. Loading it client-only avoids hydration mismatches on things
+// like the pagination buttons' `disabled` state.
+const JobApplicationTable = dynamic(
+  () =>
+    import("./components/job-application-table").then(
+      (mod) => mod.JobApplicationTable,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="py-12 text-center text-sm text-muted-foreground">
+        Loading applications…
+      </div>
+    ),
+  },
+);
 
 export default function JobTracker() {
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [openCreate, setOpenCreate] = useState(false);
   const [editingApp, setEditingApp] = useState<JobApplication | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const [formData, setFormData] = useState<{
@@ -126,26 +130,6 @@ export default function JobTracker() {
     );
   };
 
-  const filteredApplications = useMemo(() => {
-    const query = searchQuery.toLowerCase().trim();
-    return applications
-      .filter((app) => {
-        const matchesSearch =
-          !query ||
-          app.company.toLowerCase().includes(query) ||
-          app.jobTitle.toLowerCase().includes(query);
-
-        const matchesStatus =
-          statusFilter === "all" || app.status === statusFilter;
-
-        return matchesSearch && matchesStatus;
-      })
-      .sort(
-        (a, b) =>
-          new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime(),
-      );
-  }, [applications, searchQuery, statusFilter]);
-
   const stats = useMemo(() => {
     return {
       total: applications.length,
@@ -199,18 +183,7 @@ export default function JobTracker() {
 
         {/* Compact Sticky Filter Bar */}
         <div className="sticky top-0 z-20 -mx-4 px-4 sm:-mx-8 sm:px-8 py-3 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-border/40 shadow-xs">
-          <div className="flex flex-col sm:flex-row items-center gap-3 max-w-6xl mx-auto">
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search by company or job title..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 bg-background border-border/60"
-              />
-            </div>
-
+          <div className="flex flex-col sm:flex-row items-center gap-3 max-w-6xl mx-auto sm:justify-end">
             <Select
               value={statusFilter}
               onValueChange={(val) => {
@@ -228,11 +201,18 @@ export default function JobTracker() {
                 <SelectItem value="rejected">Rejected</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+        </div>
 
+        <JobApplicationTable
+          data={applications}
+          onEdit={setEditingApp}
+          onDelete={handleDelete}
+          toolbarActions={
             <Dialog open={openCreate} onOpenChange={setOpenCreate}>
               <DialogTrigger
                 render={
-                  <Button className="w-full sm:w-auto flex items-center justify-center gap-2 shadow-xs font-medium shrink-0" />
+                  <Button className="flex items-center justify-center gap-2 shadow-xs font-medium shrink-0" />
                 }
               >
                 <Plus className="w-4 h-4" /> Add Application
@@ -314,126 +294,8 @@ export default function JobTracker() {
                 </form>
               </DialogContent>
             </Dialog>
-          </div>
-        </div>
-
-        {/* Applications Data Table */}
-        <Card className="border-border/60 shadow-xs overflow-hidden">
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader className="bg-muted/40">
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-[240px]">Company</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Applied Date & Time</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Update Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredApplications.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="text-center py-12 text-muted-foreground"
-                    >
-                      <div className="flex flex-col items-center gap-2">
-                        <Building2 className="w-8 h-8 text-muted-foreground/40" />
-                        <p className="text-sm">
-                          {searchQuery || statusFilter !== "all"
-                            ? "No job applications found matching your search."
-                            : "No applications recorded yet."}
-                        </p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredApplications.map((app) => (
-                    <TableRow
-                      key={app.id}
-                      className="group transition-colors hover:bg-muted/30"
-                    >
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-foreground">
-                            {app.company}
-                          </span>
-                          {app.url && (
-                            <a
-                              href={app.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-muted"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </a>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground font-medium">
-                        {app.jobTitle}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-xs">
-                        {new Date(app.appliedDate).toLocaleString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={app.status} />
-                      </TableCell>
-                      <TableCell>
-                        <Select
-                          value={app.status}
-                          onValueChange={(val) => {
-                            if (val) handleStatusChange(app.id, val);
-                          }}
-                        >
-                          <SelectTrigger className="w-[125px] h-8 text-xs bg-background/50 border-border/60">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="applied">Applied</SelectItem>
-                            <SelectItem value="interviewing">
-                              Interviewing
-                            </SelectItem>
-                            <SelectItem value="offered">Offered</SelectItem>
-                            <SelectItem value="rejected">Rejected</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 hover:bg-muted"
-                            onClick={() => setEditingApp(app)}
-                          >
-                            <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 hover:bg-rose-500/10 hover:text-rose-600"
-                            onClick={() => handleDelete(app.id)}
-                          >
-                            <Trash2 className="w-3.5 h-3.5 text-muted-foreground group-hover:text-rose-600" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+          }
+        />
 
         {/* Edit Application Dialog */}
         <Dialog
