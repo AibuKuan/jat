@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ArrowUpDown, ExternalLink, MoreHorizontal } from 'lucide-react';
 import { ApplicationStatus, type JobApplication } from '@/db/schema';
+import { LocalDateTime } from '@/components/local-date-time';
 
 const statusVariants: Record<
   ApplicationStatus,
@@ -135,8 +136,7 @@ export function JobApplicationTable({
         ),
         cell: ({ row }) => {
           const dateVal = row.getValue('appliedDate') as Date | string;
-          const date = new Date(dateVal);
-          return <span>{date.toLocaleDateString()}</span>;
+          return <LocalDateTime dateTime={dateVal} />;
         },
       },
       {
