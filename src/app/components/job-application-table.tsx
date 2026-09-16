@@ -61,6 +61,7 @@ export function JobApplicationTable({
     () => [
       {
         id: 'select',
+        enableGlobalFilter: false,
         header: ({ table }) => (
           <Checkbox
             checked={table.getIsAllPageRowsSelected()}
@@ -122,6 +123,7 @@ export function JobApplicationTable({
       },
       {
         accessorKey: 'appliedDate',
+        enableGlobalFilter: false,
         header: ({ column }) => (
           <Button
             variant="ghost"
@@ -139,6 +141,7 @@ export function JobApplicationTable({
       },
       {
         accessorKey: 'url',
+        enableGlobalFilter: false,
         header: 'Link',
         cell: ({ row }) => {
           const url = row.getValue('url') as string | null;
@@ -159,6 +162,7 @@ export function JobApplicationTable({
       },
       {
         id: 'actions',
+        enableGlobalFilter: false,
         cell: ({ row }) => {
           const application = row.original;
 
@@ -206,8 +210,7 @@ export function JobApplicationTable({
     <DataTable
       columns={columns}
       data={data}
-      searchColumnKey="jobTitle"
-      searchPlaceholder="Filter job titles..."
+      searchPlaceholder="Search job title or company..."
       toolbarActions={toolbarActions}
     />
   );

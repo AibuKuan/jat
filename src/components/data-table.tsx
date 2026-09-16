@@ -6,6 +6,7 @@ import {
   tableFeatures,
   rowSortingFeature,
   columnFilteringFeature,
+  globalFilteringFeature,
   rowPaginationFeature,
   rowSelectionFeature,
   columnVisibilityFeature,
@@ -45,11 +46,13 @@ import { ChevronLeft, ChevronRight, SlidersHorizontal, X } from 'lucide-react';
 // live as slots on this same object, not as options passed to useTable.
 // filterFns must be registered explicitly too — v9 doesn't ship built-in
 // filter function names for free, so 'includesString' (the default
-// `filterFn: 'auto'` resolves to for string columns) has to be listed here
-// or every column filter silently stops working and warns in the console.
+// `filterFn: 'auto'` resolves to for string columns, and what global
+// filtering uses too) has to be listed here or filtering silently stops
+// working and warns in the console.
 const features = tableFeatures({
   rowSortingFeature,
   columnFilteringFeature,
+  globalFilteringFeature,
   rowPaginationFeature,
   rowSelectionFeature,
   columnVisibilityFeature,
@@ -71,7 +74,9 @@ interface DataTableProps<TData extends RowData, TValue> {
   // ColumnDef's first generic is now the feature set, not TData.
   columns: ColumnDef<FeatureSet, TData, TValue>[];
   data: TData[];
-  searchColumnKey?: string;
+  // Searches every column with enableGlobalFilter !== false (defaults to
+  // true), so it matches across multiple fields at once — set
+  // enableGlobalFilter: false on individual columns to exclude them.
   searchPlaceholder?: string;
   // Rendered next to the search input — e.g. an "Add" button/dialog that a
   // consuming page wants placed in the table's toolbar rather than elsewhere
@@ -82,7 +87,6 @@ interface DataTableProps<TData extends RowData, TValue> {
 export function DataTable<TData extends RowData, TValue>({
   columns,
   data,
-  searchColumnKey,
   searchPlaceholder = 'Filter...',
   toolbarActions,
 }: DataTableProps<TData, TValue>) {
@@ -90,6 +94,7 @@ export function DataTable<TData extends RowData, TValue>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<ColumnVisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
+  const [globalFilter, setGlobalFilter] = React.useState('');
 
   const table = useTable({
     features,
@@ -105,43 +110,37 @@ export function DataTable<TData extends RowData, TValue>({
       columnFilters,
       columnVisibility,
       rowSelection,
+      globalFilter,
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    onGlobalFilterChange: setGlobalFilter,
   });
-
-  const searchValue = searchColumnKey
-    ? ((table.getColumn(searchColumnKey)?.getFilterValue() as string) ?? '')
-    : '';
 
   return (
     <div className="w-full space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div className="flex flex-1 items-center gap-2">
-          {searchColumnKey && (
-            <div className="relative max-w-sm w-full">
-              <Input
-                placeholder={searchPlaceholder}
-                value={searchValue}
-                onChange={(event) =>
-                  table.getColumn(searchColumnKey)?.setFilterValue(event.target.value)
-                }
-                className={searchValue ? 'pr-8' : undefined}
-              />
-              {searchValue && (
-                <button
-                  type="button"
-                  onClick={() => table.getColumn(searchColumnKey)?.setFilterValue('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  aria-label="Clear search"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-          )}
+          <div className="relative max-w-sm w-full">
+            <Input
+              placeholder={searchPlaceholder}
+              value={globalFilter}
+              onChange={(event) => setGlobalFilter(event.target.value)}
+              className={globalFilter ? 'pr-8' : undefined}
+            />
+            {globalFilter && (
+              <button
+                type="button"
+                onClick={() => setGlobalFilter('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
           {toolbarActions}
         </div>
 
