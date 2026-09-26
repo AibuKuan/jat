@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "auth:generate": "pnpm dlx auth generate --output ./src/db/schema/auth-schema.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
