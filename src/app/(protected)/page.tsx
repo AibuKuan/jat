@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Briefcase, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { ApplicationStatus, JobApplication } from "@/db/schema";
-import { MetricCard } from "../components/metric-card";
+import { MetricCard } from "./components/metric-card";
 import dynamic from "next/dynamic";
 import { SignoutButton } from "@/components/signout-button";
 
@@ -30,7 +30,7 @@ import { SignoutButton } from "@/components/signout-button";
 // like the pagination buttons' `disabled` state.
 const JobApplicationTable = dynamic(
   () =>
-    import("../components/job-application-table").then(
+    import("./components/job-application-table").then(
       (mod) => mod.JobApplicationTable,
     ),
   {
