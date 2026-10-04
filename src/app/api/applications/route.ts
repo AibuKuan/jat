@@ -1,52 +1,90 @@
-import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { jobApplications } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { NextResponse } from "next/server";
+import { db } from "@/db";
+import { jobApplications } from "@/db/schema";
+import { eq, desc, and } from "drizzle-orm";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+
+async function getUserId() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  return session?.user.id ?? null;
+}
+
+const unauthorized = () =>
+  NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+const notFound = () =>
+  NextResponse.json({ error: "Not found" }, { status: 404 });
 
 export async function GET() {
+  const userId = await getUserId();
+  if (!userId) return unauthorized();
+
   const data = await db
     .select()
     .from(jobApplications)
+    .where(eq(jobApplications.userId, userId))
     .orderBy(desc(jobApplications.appliedDate));
   return NextResponse.json(data);
 }
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const newApp = await db.insert(jobApplications).values(body).returning();
+  const userId = await getUserId();
+  if (!userId) return unauthorized();
+
+  const { jobTitle, company, url, status } = await req.json();
+  const newApp = await db
+    .insert(jobApplications)
+    .values({ userId, jobTitle, company, url, status })
+    .returning();
   return NextResponse.json(newApp[0]);
 }
 
 export async function PATCH(req: Request) {
+  const userId = await getUserId();
+  if (!userId) return unauthorized();
+
   const { id, status } = await req.json();
-  const updated = await db
+  const [updated] = await db
     .update(jobApplications)
     .set({ status, updatedAt: new Date() })
-    .where(eq(jobApplications.id, id))
+    .where(and(eq(jobApplications.id, id), eq(jobApplications.userId, userId)))
     .returning();
 
-  return NextResponse.json(updated[0]);
+  if (!updated) return notFound();
+  return NextResponse.json(updated);
 }
 
 export async function PUT(req: Request) {
+  const userId = await getUserId();
+  if (!userId) return unauthorized();
+
   const { id, jobTitle, company, url, status } = await req.json();
-  const updated = await db
+
+  const [updated] = await db
     .update(jobApplications)
     .set({ jobTitle, company, url, status, updatedAt: new Date() })
-    .where(eq(jobApplications.id, id))
+    .where(and(eq(jobApplications.id, id), eq(jobApplications.userId, userId)))
     .returning();
 
-  return NextResponse.json(updated[0]);
+  if (!updated) return notFound();
+  return NextResponse.json(updated);
 }
 
 export async function DELETE(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const id = searchParams.get('id');
+  const userId = await getUserId();
+  if (!userId) return unauthorized();
 
+  const id = new URL(req.url).searchParams.get("id");
   if (!id) {
-    return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+    return NextResponse.json({ error: "ID is required" }, { status: 400 });
   }
 
-  await db.delete(jobApplications).where(eq(jobApplications.id, id));
+  const [deleted] = await db
+    .delete(jobApplications)
+    .where(and(eq(jobApplications.id, id), eq(jobApplications.userId, userId)))
+    .returning({ id: jobApplications.id });
+
+  if (!deleted) return notFound();
   return NextResponse.json({ success: true });
 }
