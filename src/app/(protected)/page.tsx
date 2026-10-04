@@ -17,16 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Plus,
-  Briefcase,
-  CheckCircle2,
-  Clock,
-  XCircle,
-} from "lucide-react";
+import { Plus, Briefcase, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { ApplicationStatus, JobApplication } from "@/db/schema";
-import { MetricCard } from "./components/metric-card";
+import { MetricCard } from "../components/metric-card";
 import dynamic from "next/dynamic";
+import { SignoutButton } from "@/components/signout-button";
 
 // This table is driven entirely by client-fetched data (see fetchApplications
 // below) and has interactive, non-deterministic internals (pagination state,
@@ -35,7 +30,7 @@ import dynamic from "next/dynamic";
 // like the pagination buttons' `disabled` state.
 const JobApplicationTable = dynamic(
   () =>
-    import("./components/job-application-table").then(
+    import("../components/job-application-table").then(
       (mod) => mod.JobApplicationTable,
     ),
   {
@@ -52,7 +47,6 @@ export default function JobTracker() {
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [openCreate, setOpenCreate] = useState(false);
   const [editingApp, setEditingApp] = useState<JobApplication | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const [formData, setFormData] = useState<{
     jobTitle: string;
@@ -144,13 +138,16 @@ export default function JobTracker() {
     <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950/50">
       <div className="max-w-6xl mx-auto p-4 sm:p-8 space-y-6">
         {/* Main Title Banner */}
-        <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-            Job Applications
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Track, manage, and analyze your job search pipeline.
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+              Job Applications
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              Track, manage, and analyze your job search pipeline.
+            </p>
+          </div>
+          <SignoutButton />
         </div>
 
         {/* Quick Metrics Cards */}
@@ -179,29 +176,6 @@ export default function JobTracker() {
             icon={XCircle}
             variant="rose"
           />
-        </div>
-
-        {/* Compact Sticky Filter Bar */}
-        <div className="sticky top-0 z-20 -mx-4 px-4 sm:-mx-8 sm:px-8 py-3 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-border/40 shadow-xs">
-          <div className="flex flex-col sm:flex-row items-center gap-3 max-w-6xl mx-auto sm:justify-end">
-            <Select
-              value={statusFilter}
-              onValueChange={(val) => {
-                if (val !== null) setStatusFilter(val);
-              }}
-            >
-              <SelectTrigger className="w-full sm:w-[160px] bg-background border-border/60">
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="applied">Applied</SelectItem>
-                <SelectItem value="interviewing">Interviewing</SelectItem>
-                <SelectItem value="offered">Offered</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
 
         <JobApplicationTable
