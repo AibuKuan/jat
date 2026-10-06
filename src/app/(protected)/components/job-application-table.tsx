@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { ColumnDef } from '@tanstack/react-table';
-import { DataTable, type DataTableFeatures } from '@/components/data-table';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
+import * as React from "react";
+import { ColumnDef } from "@tanstack/react-table";
+import { DataTable, type DataTableFeatures } from "@/components/data-table";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,30 +14,40 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ArrowUpDown, ExternalLink, MoreHorizontal } from 'lucide-react';
-import { ApplicationStatus, type JobApplication } from '@/db/schema';
-import { LocalDateTime } from '@/components/local-date-time';
+} from "@/components/ui/dropdown-menu";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ExternalLink,
+  MoreHorizontal,
+} from "lucide-react";
+import { ApplicationStatus, type JobApplication } from "@/db/schema";
+import { LocalDateTime } from "@/components/local-date-time";
 
 const statusVariants: Record<
   ApplicationStatus,
   { label: string; className: string }
 > = {
   [ApplicationStatus.APPLIED]: {
-    label: 'Applied',
-    className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+    label: "Applied",
+    className:
+      "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
   },
   [ApplicationStatus.INTERVIEWING]: {
-    label: 'Interviewing',
-    className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
+    label: "Interviewing",
+    className:
+      "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
   },
   [ApplicationStatus.OFFERED]: {
-    label: 'Offered',
-    className: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+    label: "Offered",
+    className:
+      "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
   },
   [ApplicationStatus.REJECTED]: {
-    label: 'Rejected',
-    className: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300',
+    label: "Rejected",
+    className:
+      "bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300",
   },
 };
 
@@ -48,25 +58,55 @@ interface JobApplicationTableProps {
   toolbarActions?: React.ReactNode;
 }
 
+type SortableColumn = {
+  getIsSorted: () => false | "asc" | "desc";
+  toggleSorting: (desc?: boolean) => void;
+  clearSorting: () => void;
+};
+
+function SortableHeader({
+  title,
+  column,
+}: {
+  title: string;
+  column: SortableColumn;
+}) {
+  const sorted = column.getIsSorted();
+  const Icon =
+    sorted === "asc" ? ArrowUp : sorted === "desc" ? ArrowDown : ArrowUpDown;
+
+  const handleClick = () => {
+    if (sorted === "desc") column.clearSorting();
+    else column.toggleSorting(sorted === "asc");
+  };
+
+  return (
+    <Button variant="ghost" onClick={handleClick}>
+      {title}
+      <Icon className="ml-2 h-4 w-4" />
+    </Button>
+  );
+}
+
 export function JobApplicationTable({
   data,
   onEdit,
   onDelete,
   toolbarActions,
 }: JobApplicationTableProps) {
-  // Column defs are typed against the same feature set DataTable uses
-  // internally, rather than `any` — matching FeatureSet keeps things like
-  // filterFn's allowed values (and everything else feature-dependent)
-  // consistent with what DataTable actually supports.
-  const columns = React.useMemo<ColumnDef<DataTableFeatures, JobApplication, any>[]>(
+  const columns = React.useMemo<
+    ColumnDef<DataTableFeatures, JobApplication, any>[]
+  >(
     () => [
       {
-        id: 'select',
+        id: "select",
         enableGlobalFilter: false,
         header: ({ table }) => (
           <Checkbox
             checked={table.getIsAllPageRowsSelected()}
-            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            onCheckedChange={(value) =>
+              table.toggleAllPageRowsSelected(!!value)
+            }
             aria-label="Select all rows"
           />
         ),
@@ -79,40 +119,39 @@ export function JobApplicationTable({
         ),
       },
       {
-        accessorKey: 'jobTitle',
+        accessorKey: "jobTitle",
         header: ({ column }) => (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Job Title
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
+          <SortableHeader
+            title="Job Title"
+            column={column}
+          />
         ),
         cell: ({ row }) => (
-          <span className="font-medium">{row.getValue('jobTitle')}</span>
+          <span className="font-medium">{row.getValue("jobTitle")}</span>
         ),
       },
       {
-        accessorKey: 'company',
+        accessorKey: "company",
         header: ({ column }) => (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Company
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
+          <SortableHeader
+            title="Company"
+            column={column}
+          />
         ),
       },
       {
-        accessorKey: 'status',
-        header: 'Status',
+        accessorKey: "status",
+        header: ({ column }) => (
+          <SortableHeader
+            title="Status"
+            column={column}
+          />
+        ),
         cell: ({ row }) => {
-          const status = row.getValue('status') as ApplicationStatus;
+          const status = row.getValue("status") as ApplicationStatus;
           const config = statusVariants[status] ?? {
             label: status,
-            className: 'bg-gray-100 text-gray-800',
+            className: "bg-gray-100 text-gray-800",
           };
 
           return (
@@ -123,28 +162,25 @@ export function JobApplicationTable({
         },
       },
       {
-        accessorKey: 'appliedDate',
+        accessorKey: "appliedDate",
         enableGlobalFilter: false,
         header: ({ column }) => (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Applied Date
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
+          <SortableHeader
+            title="Applied Date"
+            column={column}
+          />
         ),
         cell: ({ row }) => {
-          const dateVal = row.getValue('appliedDate') as Date | string;
+          const dateVal = row.getValue("appliedDate") as Date | string;
           return <LocalDateTime dateTime={dateVal} />;
         },
       },
       {
-        accessorKey: 'url',
+        accessorKey: "url",
         enableGlobalFilter: false,
-        header: 'Link',
+        header: "Link",
         cell: ({ row }) => {
-          const url = row.getValue('url') as string | null;
+          const url = row.getValue("url") as string | null;
           if (!url) return <span className="text-muted-foreground">-</span>;
 
           return (
@@ -161,7 +197,7 @@ export function JobApplicationTable({
         },
       },
       {
-        id: 'actions',
+        id: "actions",
         enableGlobalFilter: false,
         cell: ({ row }) => {
           const application = row.original;
@@ -178,7 +214,9 @@ export function JobApplicationTable({
                 <DropdownMenuGroup>
                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
                   <DropdownMenuItem
-                    onClick={() => navigator.clipboard.writeText(application.id)}
+                    onClick={() =>
+                      navigator.clipboard.writeText(application.id)
+                    }
                   >
                     Copy ID
                   </DropdownMenuItem>
@@ -203,7 +241,7 @@ export function JobApplicationTable({
         },
       },
     ],
-    [onEdit, onDelete]
+    [onEdit, onDelete],
   );
 
   return (

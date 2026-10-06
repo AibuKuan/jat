@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import * as React from 'react';
+import * as React from "react";
 import {
   useTable,
   tableFeatures,
@@ -20,7 +20,10 @@ import {
   ColumnVisibilityState,
   ColumnFiltersState,
   RowSelectionState,
-} from '@tanstack/react-table';
+  sortFn_alphanumeric,
+  sortFn_datetime,
+  sortFn_basic,
+} from "@tanstack/react-table";
 
 import {
   Table,
@@ -29,26 +32,18 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ChevronLeft, ChevronRight, SlidersHorizontal, X } from 'lucide-react';
+} from "@/components/ui/dropdown-menu";
+import { ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
 
-// Feature set is defined once, at module scope, and reused for every
-// instance of this table. Row model factories (e.g. paginatedRowModel)
-// live as slots on this same object, not as options passed to useTable.
-// filterFns must be registered explicitly too — v9 doesn't ship built-in
-// filter function names for free, so 'includesString' (the default
-// `filterFn: 'auto'` resolves to for string columns, and what global
-// filtering uses too) has to be listed here or filtering silently stops
-// working and warns in the console.
 const features = tableFeatures({
   rowSortingFeature,
   columnFilteringFeature,
@@ -61,49 +56,59 @@ const features = tableFeatures({
   filterFns: {
     includesString: filterFn_includesString,
   },
+  sortFns: {
+    alphanumeric: sortFn_alphanumeric,
+    datetime: sortFn_datetime,
+    basic: sortFn_basic,
+  },
 });
 
 type FeatureSet = typeof features;
 
-// Exported so files defining columns for this table can type them against
-// the exact same feature set, instead of falling back to `any` (which
-// silently widens what's allowed for things like `filterFn` string values).
 export type DataTableFeatures = FeatureSet;
 
 interface DataTableProps<TData extends RowData, TValue> {
-  // ColumnDef's first generic is now the feature set, not TData.
   columns: ColumnDef<FeatureSet, TData, TValue>[];
   data: TData[];
-  // Searches every column with enableGlobalFilter !== false (defaults to
-  // true), so it matches across multiple fields at once — set
-  // enableGlobalFilter: false on individual columns to exclude them.
   searchPlaceholder?: string;
-  // Rendered next to the search input — e.g. an "Add" button/dialog that a
-  // consuming page wants placed in the table's toolbar rather than elsewhere
-  // on the page. Kept generic so DataTable stays data-agnostic.
   toolbarActions?: React.ReactNode;
 }
 
 export function DataTable<TData extends RowData, TValue>({
   columns,
   data,
-  searchPlaceholder = 'Filter...',
+  searchPlaceholder = "Filter...",
   toolbarActions,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState<ColumnVisibilityState>({});
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    [],
+  );
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<ColumnVisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
-  const [globalFilter, setGlobalFilter] = React.useState('');
+  const [globalFilter, setGlobalFilter] = React.useState("");
+
+  // TanStack Table doesn't sort the data, so we do it here.
+  const sortedData = React.useMemo(() => {
+    if (!sorting.length) return data;
+    const { id, desc } = sorting[0];
+    return [...data].sort((a, b) => {
+      const av = (a as Record<string, unknown>)[id];
+      const bv = (b as Record<string, unknown>)[id];
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      const result = String(av).localeCompare(String(bv), undefined, {
+        numeric: true,
+        sensitivity: "base",
+      });
+      return desc ? -result : result;
+    });
+  }, [data, sorting]);
 
   const table = useTable({
     features,
-    data,
-    // TValue is a generic parameter on this component, not a concrete type,
-    // so TanStack Table can't infer it structurally from the columns array —
-    // it collapses to `unknown` and fights with our TValue. Asserting here
-    // sidesteps that inference dead-end (the same trick shadcn/ui uses for
-    // the equivalent v8 pattern).
+    data: sortedData, // TanStack wont sort the column for some reason.
     columns: columns as ColumnDef<FeatureSet, TData, unknown>[],
     state: {
       sorting,
@@ -128,12 +133,12 @@ export function DataTable<TData extends RowData, TValue>({
               placeholder={searchPlaceholder}
               value={globalFilter}
               onChange={(event) => setGlobalFilter(event.target.value)}
-              className={globalFilter ? 'pr-8' : undefined}
+              className={globalFilter ? "pr-8" : undefined}
             />
             {globalFilter && (
               <button
                 type="button"
-                onClick={() => setGlobalFilter('')}
+                onClick={() => setGlobalFilter("")}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 aria-label="Clear search"
               >
@@ -147,7 +152,11 @@ export function DataTable<TData extends RowData, TValue>({
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <Button variant="outline" size="sm" className="ml-auto flex items-center gap-2" />
+              <Button
+                variant="outline"
+                size="sm"
+                className="ml-auto flex items-center gap-2"
+              />
             }
           >
             <SlidersHorizontal className="h-4 w-4" />
@@ -163,7 +172,9 @@ export function DataTable<TData extends RowData, TValue>({
                     key={column.id}
                     className="capitalize"
                     checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
                   >
                     {column.id}
                   </DropdownMenuCheckboxItem>
@@ -185,7 +196,7 @@ export function DataTable<TData extends RowData, TValue>({
                         ? null
                         : flexRender(
                             header.column.columnDef.header,
-                            header.getContext()
+                            header.getContext(),
                           )}
                     </TableHead>
                   );
@@ -198,18 +209,24 @@ export function DataTable<TData extends RowData, TValue>({
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
+                  data-state={row.getIsSelected() && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   No results.
                 </TableCell>
               </TableRow>
@@ -220,15 +237,14 @@ export function DataTable<TData extends RowData, TValue>({
 
       <div className="flex items-center justify-between px-2">
         <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{' '}
+          {table.getFilteredSelectedRowModel().rows.length} of{" "}
           {table.getFilteredRowModel().rows.length} row(s) selected.
         </div>
         <div className="flex items-center space-x-6 lg:space-x-8">
           <div className="flex items-center space-x-2">
             <p className="text-sm font-medium">Page</p>
             <span className="text-sm font-medium">
-              {table.state.pagination.pageIndex + 1} of{' '}
-              {table.getPageCount()}
+              {table.state.pagination.pageIndex + 1} of {table.getPageCount()}
             </span>
           </div>
           <div className="flex items-center space-x-2">
