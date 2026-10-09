@@ -28,7 +28,7 @@ export const jobApplications = pgTable(
     id: text("id")
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
-    userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
+    userId: text("user_id").references(() => user.id, { onDelete: "cascade" }).notNull(),
     jobTitle: varchar("job_title", { length: 255 }).notNull(),
     company: varchar("company", { length: 255 }).notNull(),
     url: text("url"),
