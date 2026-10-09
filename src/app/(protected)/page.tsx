@@ -21,7 +21,7 @@ import { Plus, Briefcase, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { ApplicationStatus, JobApplication } from "@/db/schema";
 import { MetricCard } from "./components/metric-card";
 import dynamic from "next/dynamic";
-import { SignoutButton } from "@/components/signout-button";
+import { ProfileMenu } from "@/components/profile-menu";
 
 // This table is driven entirely by client-fetched data (see fetchApplications
 // below) and has interactive, non-deterministic internals (pagination state,
@@ -147,7 +147,7 @@ export default function JobTracker() {
               Track, manage, and analyze your job search pipeline.
             </p>
           </div>
-          <SignoutButton />
+          <ProfileMenu />
         </div>
 
         {/* Quick Metrics Cards */}
