@@ -1,5 +1,7 @@
 "use client";
 
+import { CheckEmail } from "@/components/check-email";
+import { ForgotPasswordForm } from "@/components/forgot-password-form";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -23,6 +25,8 @@ export default function Signin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [forgotOpen, setForgotOpen] = useState(false);
 
   const handleEmailSignIn = async (e: React.SubmitEvent) => {
     e.preventDefault();
@@ -34,11 +38,20 @@ export default function Signin() {
       password,
     });
 
+    setLoading(false);
+
+    if (error?.status === 403) {
+      setUnverifiedEmail(email);
+      return;
+    }
+
     if (error) {
       setError(error.message || "Failed to sign in");
-    } else {
-      router.push("/");
+      return;
     }
+
+    router.push("/");
+    router.refresh();
   };
 
   const handleSignUp = async (e: React.SubmitEvent) => {
@@ -50,14 +63,17 @@ export default function Signin() {
       email,
       password,
       name,
+      callbackURL: "/",
     });
+
+    setLoading(false);
 
     if (error) {
       setError(error.message || "Failed to sign up");
-      setLoading(false);
-    } else {
-      router.push("/");
+      return;
     }
+
+    setUnverifiedEmail(email);
   };
 
   const handleGoogleSignIn = async () => {
@@ -80,12 +96,40 @@ export default function Signin() {
     }
   };
 
+  if (unverifiedEmail) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <CheckEmail
+              email={unverifiedEmail}
+              onBack={() => setUnverifiedEmail(null)}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (forgotOpen) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <ForgotPasswordForm
+          initialEmail={email}
+          onBack={() => setForgotOpen(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Welcome</CardTitle>
-          <CardDescription>Sign in to your account or create a new one</CardDescription>
+          <CardDescription>
+            Sign in to your account or create a new one
+          </CardDescription>
         </CardHeader>
 
         <CardContent>
@@ -115,7 +159,16 @@ export default function Signin() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="login-password">Password</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="login-password">Password</Label>
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                      onClick={() => setForgotOpen(true)}
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
                   <Input
                     id="login-password"
                     type="password"
@@ -176,7 +229,9 @@ export default function Signin() {
               <div className="w-full border-t border-gray-200" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background text-muted-foreground px-2">Or continue with</span>
+              <span className="bg-background text-muted-foreground px-2">
+                Or continue with
+              </span>
             </div>
           </div>
 
