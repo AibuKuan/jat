@@ -43,6 +43,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
+import { AgentSheet } from "./agent-sheet";
 
 const features = tableFeatures({
   rowSortingFeature,
@@ -150,6 +151,7 @@ export function DataTable<TData extends RowData, TValue>({
         </div>
 
         <DropdownMenu>
+          <AgentSheet />
           <DropdownMenuTrigger
             render={
               <Button
