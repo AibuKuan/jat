@@ -152,7 +152,7 @@ export default function JobTracker() {
         </div>
 
         {/* Quick Metrics Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-4">
           <MetricCard
             label="Total Applied"
             value={stats.total}
@@ -168,6 +168,7 @@ export default function JobTracker() {
                 value={stats.byStatus[status] ?? 0}
                 icon={option.icon}
                 color={option.color}
+                total={stats.total}
               />
             );
           })}

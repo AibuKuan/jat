@@ -77,6 +77,7 @@ export const STATUS_BY_VALUE = Object.fromEntries(
 ) as Record<ApplicationStatus, StatusOption>;
 
 export const METRIC_STATUSES: ApplicationStatus[] = [
+  ApplicationStatus.APPLIED,
   ApplicationStatus.INTERVIEWING,
   ApplicationStatus.OFFERED,
   ApplicationStatus.REJECTED,
