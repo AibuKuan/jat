@@ -24,32 +24,7 @@ import {
 } from "lucide-react";
 import { ApplicationStatus, type JobApplication } from "@/db/schema";
 import { LocalDateTime } from "@/components/local-date-time";
-
-const statusVariants: Record<
-  ApplicationStatus,
-  { label: string; className: string }
-> = {
-  [ApplicationStatus.APPLIED]: {
-    label: "Applied",
-    className:
-      "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  },
-  [ApplicationStatus.INTERVIEWING]: {
-    label: "Interviewing",
-    className:
-      "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
-  },
-  [ApplicationStatus.OFFERED]: {
-    label: "Offered",
-    className:
-      "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
-  },
-  [ApplicationStatus.REJECTED]: {
-    label: "Rejected",
-    className:
-      "bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300",
-  },
-};
+import { COLOR_STYLES, STATUS_BY_VALUE } from "@/lib/application-status";
 
 interface JobApplicationTableProps {
   data: JobApplication[];
@@ -121,10 +96,7 @@ export function JobApplicationTable({
       {
         accessorKey: "jobTitle",
         header: ({ column }) => (
-          <SortableHeader
-            title="Job Title"
-            column={column}
-          />
+          <SortableHeader title="Job Title" column={column} />
         ),
         cell: ({ row }) => (
           <span className="font-medium">{row.getValue("jobTitle")}</span>
@@ -133,30 +105,24 @@ export function JobApplicationTable({
       {
         accessorKey: "company",
         header: ({ column }) => (
-          <SortableHeader
-            title="Company"
-            column={column}
-          />
+          <SortableHeader title="Company" column={column} />
         ),
       },
       {
         accessorKey: "status",
         header: ({ column }) => (
-          <SortableHeader
-            title="Status"
-            column={column}
-          />
+          <SortableHeader title="Status" column={column} />
         ),
         cell: ({ row }) => {
           const status = row.getValue("status") as ApplicationStatus;
-          const config = statusVariants[status] ?? {
-            label: status,
-            className: "bg-gray-100 text-gray-800",
-          };
+          const option = STATUS_BY_VALUE[status];
 
           return (
-            <Badge variant="outline" className={`border-0 ${config.className}`}>
-              {config.label}
+            <Badge
+              variant="outline"
+              className={`border-0 ${option ? COLOR_STYLES[option.color].badge : COLOR_STYLES.slate.badge}`}
+            >
+              {option?.label ?? status}
             </Badge>
           );
         },
@@ -165,10 +131,7 @@ export function JobApplicationTable({
         accessorKey: "appliedDate",
         enableGlobalFilter: false,
         header: ({ column }) => (
-          <SortableHeader
-            title="Applied Date"
-            column={column}
-          />
+          <SortableHeader title="Applied Date" column={column} />
         ),
         cell: ({ row }) => {
           const dateVal = row.getValue("appliedDate") as Date | string;

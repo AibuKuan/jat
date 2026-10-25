@@ -1,7 +1,11 @@
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { ApplicationStatus, jobApplications } from "@/db/schema";
-import { agentJson, authenticateToken, type Permission } from "@/lib/agent-auth";
+import {
+  agentJson,
+  authenticateToken,
+  type Permission,
+} from "@/lib/agent-auth";
 
 const ACTION_PERMISSION: Record<string, Permission> = {
   list: "read",
@@ -38,7 +42,9 @@ function parseFields(params: URLSearchParams) {
   }
   if (status) {
     if (!STATUSES.includes(status)) {
-      return { error: `status must be one of: ${STATUSES.join(", ")}` as const };
+      return {
+        error: `status must be one of: ${STATUSES.join(", ")}` as const,
+      };
     }
     fields.status = status as ApplicationStatus;
   }
@@ -72,7 +78,10 @@ export async function GET(
       .from(jobApplications)
       .where(
         status && STATUSES.includes(status)
-          ? and(eq(jobApplications.userId, userId), eq(jobApplications.status, status as ApplicationStatus))
+          ? and(
+              eq(jobApplications.userId, userId),
+              eq(jobApplications.status, status as ApplicationStatus),
+            )
           : eq(jobApplications.userId, userId),
       )
       .orderBy(desc(jobApplications.appliedDate))
@@ -94,10 +103,13 @@ export async function GET(
       const [existing] = await db
         .select()
         .from(jobApplications)
-        .where(and(eq(jobApplications.userId, userId), eq(jobApplications.url, url)))
+        .where(
+          and(eq(jobApplications.userId, userId), eq(jobApplications.url, url)),
+        )
         .limit(1);
 
-      if (existing) return agentJson({ application: existing, duplicate: true });
+      if (existing)
+        return agentJson({ application: existing, duplicate: true });
     }
 
     const [created] = await db
@@ -120,8 +132,10 @@ export async function GET(
 
     const [updated] = await db
       .update(jobApplications)
-      .set({ ...parsed.fields, updatedAt: new Date() })
-      .where(and(eq(jobApplications.id, id), eq(jobApplications.userId, userId)))
+      .set(parsed.fields)
+      .where(
+        and(eq(jobApplications.id, id), eq(jobApplications.userId, userId)),
+      )
       .returning();
 
     if (!updated) return agentJson({ error: "Not found" }, 404);

@@ -47,7 +47,7 @@ export async function PATCH(req: Request) {
   const { id, status } = await req.json();
   const [updated] = await db
     .update(jobApplications)
-    .set({ status, updatedAt: new Date() })
+    .set({ status })
     .where(and(eq(jobApplications.id, id), eq(jobApplications.userId, userId)))
     .returning();
 
@@ -63,7 +63,7 @@ export async function PUT(req: Request) {
 
   const [updated] = await db
     .update(jobApplications)
-    .set({ jobTitle, company, url, status, updatedAt: new Date() })
+    .set({ jobTitle, company, url, status })
     .where(and(eq(jobApplications.id, id), eq(jobApplications.userId, userId)))
     .returning();
 

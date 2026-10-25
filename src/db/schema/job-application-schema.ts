@@ -15,6 +15,7 @@ export enum ApplicationStatus {
   INTERVIEWING = "interviewing",
   OFFERED = "offered",
   REJECTED = "rejected",
+  IGNORED = "ignored",
 }
 
 export const applicationStatusEnum = pgEnum(
@@ -28,7 +29,9 @@ export const jobApplications = pgTable(
     id: text("id")
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
-    userId: text("user_id").references(() => user.id, { onDelete: "cascade" }).notNull(),
+    userId: text("user_id")
+      .references(() => user.id, { onDelete: "cascade" })
+      .notNull(),
     jobTitle: varchar("job_title", { length: 255 }).notNull(),
     company: varchar("company", { length: 255 }).notNull(),
     url: text("url"),
@@ -39,7 +42,10 @@ export const jobApplications = pgTable(
       .default(ApplicationStatus.APPLIED)
       .notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
   },
   (table) => [index("job_applications_userId_idx").on(table.userId)],
 );

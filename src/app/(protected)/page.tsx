@@ -17,17 +17,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Briefcase, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { Plus, Briefcase } from "lucide-react";
 import { ApplicationStatus, JobApplication } from "@/db/schema";
 import { MetricCard } from "./components/metric-card";
 import dynamic from "next/dynamic";
 import { ProfileMenu } from "@/components/profile-menu";
+import {
+  METRIC_STATUSES,
+  STATUS_BY_VALUE,
+  STATUS_OPTIONS,
+} from "@/lib/application-status";
 
-// This table is driven entirely by client-fetched data (see fetchApplications
-// below) and has interactive, non-deterministic internals (pagination state,
-// floating-ui menus) that don't need — and don't reliably match — server
-// rendering. Loading it client-only avoids hydration mismatches on things
-// like the pagination buttons' `disabled` state.
 const JobApplicationTable = dynamic(
   () =>
     import("./components/job-application-table").then(
@@ -124,15 +124,16 @@ export default function JobTracker() {
     );
   };
 
-  const stats = useMemo(() => {
-    return {
+  const stats = useMemo(
+    () => ({
       total: applications.length,
-      interviewing: applications.filter((a) => a.status === "interviewing")
-        .length,
-      offered: applications.filter((a) => a.status === "offered").length,
-      rejected: applications.filter((a) => a.status === "rejected").length,
-    };
-  }, [applications]);
+      byStatus: applications.reduce<Record<string, number>>((acc, app) => {
+        acc[app.status] = (acc[app.status] ?? 0) + 1;
+        return acc;
+      }, {}),
+    }),
+    [applications],
+  );
 
   return (
     <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950/50">
@@ -151,31 +152,25 @@ export default function JobTracker() {
         </div>
 
         {/* Quick Metrics Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
           <MetricCard
             label="Total Applied"
             value={stats.total}
             icon={Briefcase}
-            variant="default"
+            color="slate"
           />
-          <MetricCard
-            label="Interviewing"
-            value={stats.interviewing}
-            icon={Clock}
-            variant="sky"
-          />
-          <MetricCard
-            label="Offered"
-            value={stats.offered}
-            icon={CheckCircle2}
-            variant="emerald"
-          />
-          <MetricCard
-            label="Rejected"
-            value={stats.rejected}
-            icon={XCircle}
-            variant="rose"
-          />
+          {METRIC_STATUSES.map((status) => {
+            const option = STATUS_BY_VALUE[status];
+            return (
+              <MetricCard
+                key={status}
+                label={option.label}
+                value={stats.byStatus[status] ?? 0}
+                icon={option.icon}
+                color={option.color}
+              />
+            );
+          })}
         </div>
 
         <JobApplicationTable
@@ -253,12 +248,11 @@ export default function JobTracker() {
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="applied">Applied</SelectItem>
-                        <SelectItem value="interviewing">
-                          Interviewing
-                        </SelectItem>
-                        <SelectItem value="offered">Offered</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
+                        {STATUS_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

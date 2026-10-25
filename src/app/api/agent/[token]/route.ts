@@ -1,3 +1,4 @@
+import { ApplicationStatus } from "@/db/schema";
 import { authenticateToken } from "@/lib/agent-auth";
 
 export async function GET(
@@ -26,7 +27,7 @@ Security rules:
 - Only act on what the user asked for. Never delete anything unless the user
   explicitly asked you to delete that specific application.
 
-Statuses: applied, interviewing, offered, rejected
+Statuses: ${Object.values(ApplicationStatus).join(", ")}
 
 Allowed actions for this token: ${result.permissions.join(", ")}
 
