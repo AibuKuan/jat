@@ -29,6 +29,7 @@ import {
 import { authClient } from "@/lib/auth-client";
 import { setPasswordAction } from "@/app/actions/account";
 import { CheckEmail } from "./check-email";
+import { Switch } from "./ui/switch";
 
 const labelClass =
   "text-xs font-semibold uppercase tracking-wider text-muted-foreground";
@@ -74,12 +75,21 @@ export function AccountDialog({
   const [showSetPassword, setShowSetPassword] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [verifyEmail, setVerifyEmail] = useState<string | null>(null);
+  const [shareStatus, setShareStatus] = useState<boolean | null>(null);
+  const [savingShare, setSavingShare] = useState(false);
 
   useEffect(() => {
     if (!open || !user || isGuest) return;
     authClient.listAccounts().then(({ data }) => {
       setProviders(data?.map((account) => account.providerId) ?? []);
     });
+
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((data) => setShareStatus(Boolean(data.shareStatusAnonymously)))
+      .catch(() =>
+        setMessage({ type: "error", text: "Could not load your settings" }),
+      );
   }, [open, user?.id, isGuest]);
 
   const hasPassword = providers?.includes("credential") ?? false;
@@ -160,6 +170,23 @@ export function AccountDialog({
     }
     router.push("/signin");
     router.refresh();
+  }
+
+  async function handleToggleShare(value: boolean) {
+    setSavingShare(true);
+    setMessage(null);
+    const res = await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ shareStatusAnonymously: value }),
+    });
+    setSavingShare(false);
+
+    if (!res.ok) {
+      setMessage({ type: "error", text: "Could not update your setting" });
+      return;
+    }
+    setShareStatus(value);
   }
 
   if (!user) return null;
@@ -336,6 +363,32 @@ export function AccountDialog({
               </div>
             )}
           </div>
+        )}
+
+        {!isGuest && (
+          <>
+            <Separator />
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1">
+                <h3 className="text-sm font-semibold">Community stats</h3>
+                <p className="text-sm text-muted-foreground">
+                  Share my status anonymously. Your application statuses count
+                  toward combined, anonymous stats, and you can see how others
+                  are doing with the same posting.
+                </p>
+              </div>
+              {shareStatus === null ? (
+                <Loader2 className="mt-1 h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+              ) : (
+                <Switch
+                  checked={shareStatus}
+                  onCheckedChange={handleToggleShare}
+                  disabled={savingShare}
+                  aria-label="Share my status anonymously"
+                />
+              )}
+            </div>
+          </>
         )}
 
         <Separator />

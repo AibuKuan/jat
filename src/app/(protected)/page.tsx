@@ -27,6 +27,7 @@ import {
   STATUS_BY_VALUE,
   STATUS_OPTIONS,
 } from "@/lib/application-status";
+import { ApplicationDetailsDialog } from "@/components/application-details-dialog";
 
 const JobApplicationTable = dynamic(
   () =>
@@ -87,14 +88,11 @@ export default function JobTracker() {
     fetchApplications();
   };
 
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingApp) return;
-
+  const handleSave = async (application: JobApplication) => {
     await fetch("/api/applications", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editingApp),
+      body: JSON.stringify(application),
     });
 
     setEditingApp(null);
@@ -266,85 +264,12 @@ export default function JobTracker() {
           }
         />
 
-        {/* Edit Application Dialog */}
-        <Dialog
-          open={Boolean(editingApp)}
-          onOpenChange={(open) => !open && setEditingApp(null)}
-        >
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Edit Application</DialogTitle>
-            </DialogHeader>
-            {editingApp && (
-              <form onSubmit={handleUpdate} className="space-y-4 pt-2">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Job Title
-                  </label>
-                  <Input
-                    required
-                    value={editingApp.jobTitle}
-                    onChange={(e) =>
-                      setEditingApp({ ...editingApp, jobTitle: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Company
-                  </label>
-                  <Input
-                    required
-                    value={editingApp.company}
-                    onChange={(e) =>
-                      setEditingApp({ ...editingApp, company: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Posting URL
-                  </label>
-                  <Input
-                    type="url"
-                    value={editingApp.url || ""}
-                    onChange={(e) =>
-                      setEditingApp({ ...editingApp, url: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Status
-                  </label>
-                  <Select
-                    value={editingApp.status}
-                    onValueChange={(val) => {
-                      if (val)
-                        setEditingApp({
-                          ...editingApp,
-                          status: val as JobApplication["status"],
-                        });
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="applied">Applied</SelectItem>
-                      <SelectItem value="interviewing">Interviewing</SelectItem>
-                      <SelectItem value="offered">Offered</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button type="submit" className="w-full mt-2">
-                  Update Application
-                </Button>
-              </form>
-            )}
-          </DialogContent>
-        </Dialog>
+        {/* Application Dialog */}
+        <ApplicationDetailsDialog
+          application={editingApp}
+          onClose={() => setEditingApp(null)}
+          onSave={handleSave}
+        />
       </div>
     </div>
   );

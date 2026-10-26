@@ -7,6 +7,10 @@ export const relations = defineRelations(schema, (r) => ({
     accounts: r.many.account(),
     jobApplications: r.many.jobApplications(),
     apiTokens: r.many.apiTokens(),
+    settings: r.one.userSettings({
+      from: r.user.id,
+      to: r.userSettings.userId,
+    }),
   },
   session: {
     user: r.one.user({
@@ -29,6 +33,12 @@ export const relations = defineRelations(schema, (r) => ({
   apiTokens: {
     user: r.one.user({
       from: r.apiTokens.userId,
+      to: r.user.id,
+    }),
+  },
+  userSettings: {
+    user: r.one.user({
+      from: r.userSettings.userId,
       to: r.user.id,
     }),
   },
