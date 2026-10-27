@@ -7,31 +7,28 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
   ExternalLink,
-  MoreHorizontal,
+  Eye,
+  Trash2,
 } from "lucide-react";
 import { ApplicationStatus, type JobApplication } from "@/db/schema";
 import { LocalDateTime } from "@/components/local-date-time";
 import { COLOR_STYLES, STATUS_BY_VALUE } from "@/lib/application-status";
-
-interface JobApplicationTableProps {
-  data: JobApplication[];
-  onEdit?: (application: JobApplication) => void;
-  onDelete?: (id: string) => void;
-  toolbarActions?: React.ReactNode;
-}
+import { AgentSheet } from "@/components/agent-sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type SortableColumn = {
   getIsSorted: () => false | "asc" | "desc";
@@ -63,9 +60,16 @@ function SortableHeader({
   );
 }
 
+interface JobApplicationTableProps {
+  data: JobApplication[];
+  onView?: (application: JobApplication) => void;
+  onDelete?: (id: string) => void;
+  toolbarActions?: React.ReactNode;
+}
+
 export function JobApplicationTable({
   data,
-  onEdit,
+  onView,
   onDelete,
   toolbarActions,
 }: JobApplicationTableProps) {
@@ -159,52 +163,8 @@ export function JobApplicationTable({
           );
         },
       },
-      {
-        id: "actions",
-        enableGlobalFilter: false,
-        cell: ({ row }) => {
-          const application = row.original;
-
-          return (
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={<Button variant="ghost" className="h-8 w-8 p-0" />}
-              >
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      navigator.clipboard.writeText(application.id)
-                    }
-                  >
-                    Copy ID
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  {onEdit && (
-                    <DropdownMenuItem onClick={() => onEdit(application)}>
-                      Edit
-                    </DropdownMenuItem>
-                  )}
-                  {onDelete && (
-                    <DropdownMenuItem
-                      className="text-rose-600 focus:text-rose-600"
-                      onClick={() => onDelete(application.id)}
-                    >
-                      Delete
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          );
-        },
-      },
     ],
-    [onEdit, onDelete],
+    [],
   );
 
   return (
@@ -213,6 +173,58 @@ export function JobApplicationTable({
       data={data}
       searchPlaceholder="Search job title or company..."
       toolbarActions={toolbarActions}
+      toolbarEnd={<AgentSheet />}
+      onRowClick={onView}
+      rowActions={
+        onDelete
+          ? (application) => (
+              <DeleteApplicationButton
+                application={application}
+                onDelete={onDelete}
+              />
+            )
+          : undefined
+      }
     />
+  );
+}
+
+function DeleteApplicationButton({
+  application,
+  onDelete,
+}: {
+  application: JobApplication;
+  onDelete: (id: string) => void;
+}) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-rose-600 hover:text-rose-600"
+            aria-label="Delete application"
+          />
+        }
+      >
+        <Trash2 className="h-4 w-4" />
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this application?</AlertDialogTitle>
+          <AlertDialogDescription>
+            {application.jobTitle} at {application.company} will be permanently
+            deleted.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={() => onDelete(application.id)}>
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

@@ -43,7 +43,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
-import { AgentSheet } from "./agent-sheet";
+import { cn } from "@/lib/utils";
 
 const features = tableFeatures({
   rowSortingFeature,
@@ -64,6 +64,9 @@ const features = tableFeatures({
   },
 });
 
+const INTERACTIVE_SELECTOR =
+  "button, a, input, label, select, textarea, [role='checkbox'], [role='switch'], [role='menuitem'], [data-row-click-ignore]";
+
 type FeatureSet = typeof features;
 
 export type DataTableFeatures = FeatureSet;
@@ -73,6 +76,9 @@ interface DataTableProps<TData extends RowData, TValue> {
   data: TData[];
   searchPlaceholder?: string;
   toolbarActions?: React.ReactNode;
+  toolbarEnd?: React.ReactNode;
+  onRowClick?: (row: TData) => void;
+  rowActions?: (row: TData) => React.ReactNode;
 }
 
 export function DataTable<TData extends RowData, TValue>({
@@ -80,6 +86,9 @@ export function DataTable<TData extends RowData, TValue>({
   data,
   searchPlaceholder = "Filter...",
   toolbarActions,
+  toolbarEnd,
+  onRowClick,
+  rowActions,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -89,6 +98,26 @@ export function DataTable<TData extends RowData, TValue>({
     React.useState<ColumnVisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
   const [globalFilter, setGlobalFilter] = React.useState("");
+
+  function handleRowClick(
+    e: React.MouseEvent<HTMLTableRowElement>,
+    row: TData,
+  ) {
+    if (!onRowClick) return;
+    const target = e.target as HTMLElement;
+    if (!e.currentTarget.contains(target)) return;
+    if (target.closest(INTERACTIVE_SELECTOR)) return;
+    if (window.getSelection()?.toString()) return;
+    onRowClick(row);
+  }
+
+  function handleRowKeyDown(
+    e: React.KeyboardEvent<HTMLTableRowElement>,
+    row: TData,
+  ) {
+    if (!onRowClick || e.target !== e.currentTarget) return;
+    if (e.key === "Enter") onRowClick(row);
+  }
 
   // TanStack Table doesn't sort the data, so we do it here.
   const sortedData = React.useMemo(() => {
@@ -150,26 +179,26 @@ export function DataTable<TData extends RowData, TValue>({
           {toolbarActions}
         </div>
 
-        <DropdownMenu>
-          <AgentSheet />
-          <DropdownMenuTrigger
-            render={
-              <Button
-                variant="outline"
-                size="sm"
-                className="ml-auto flex items-center gap-2"
-              />
-            }
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-            View
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
+        <div className="ml-auto flex items-center gap-2">
+          {toolbarEnd}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                />
+              }
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              View
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => (
                   <DropdownMenuCheckboxItem
                     key={column.id}
                     className="capitalize"
@@ -180,10 +209,10 @@ export function DataTable<TData extends RowData, TValue>({
                   >
                     {column.id}
                   </DropdownMenuCheckboxItem>
-                );
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       <div className="rounded-md border">
@@ -191,18 +220,17 @@ export function DataTable<TData extends RowData, TValue>({
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
-                    </TableHead>
-                  );
-                })}
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                  </TableHead>
+                ))}
+                {rowActions && <TableHead className="w-0 p-0" />}
               </TableRow>
             ))}
           </TableHeader>
@@ -211,7 +239,11 @@ export function DataTable<TData extends RowData, TValue>({
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
+                  className={cn("group", onRowClick && "cursor-pointer")}
                   data-state={row.getIsSelected() && "selected"}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  onClick={(e) => handleRowClick(e, row.original)}
+                  onKeyDown={(e) => handleRowKeyDown(e, row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -221,12 +253,19 @@ export function DataTable<TData extends RowData, TValue>({
                       )}
                     </TableCell>
                   ))}
+                  {rowActions && (
+                    <TableCell className="sticky right-0 z-10 w-0 p-0">
+                      <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded-md bg-muted opacity-0 shadow-sm transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-visible:pointer-events-auto group-focus-visible:opacity-100 group-has-[:focus-visible]:pointer-events-auto group-has-[:focus-visible]:opacity-100">
+                        {rowActions(row.original)}
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={columns.length + (rowActions ? 1 : 0)}
                   className="h-24 text-center"
                 >
                   No results.

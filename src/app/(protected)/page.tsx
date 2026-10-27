@@ -174,7 +174,7 @@ export default function JobTracker() {
 
         <JobApplicationTable
           data={applications}
-          onEdit={setEditingApp}
+          onView={setEditingApp}
           onDelete={handleDelete}
           toolbarActions={
             <Dialog open={openCreate} onOpenChange={setOpenCreate}>
