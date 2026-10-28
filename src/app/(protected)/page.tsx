@@ -23,8 +23,7 @@ import { MetricCard } from "./components/metric-card";
 import dynamic from "next/dynamic";
 import { ProfileMenu } from "@/components/profile-menu";
 import {
-  METRIC_STATUSES,
-  STATUS_BY_VALUE,
+  getGroupStats,
   STATUS_OPTIONS,
 } from "@/lib/application-status";
 import { ApplicationDetailsDialog } from "@/components/application-details-dialog";
@@ -122,16 +121,7 @@ export default function JobTracker() {
     );
   };
 
-  const stats = useMemo(
-    () => ({
-      total: applications.length,
-      byStatus: applications.reduce<Record<string, number>>((acc, app) => {
-        acc[app.status] = (acc[app.status] ?? 0) + 1;
-        return acc;
-      }, {}),
-    }),
-    [applications],
-  );
+  const groupStats = useMemo(() => getGroupStats(applications), [applications]);
 
   return (
     <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950/50">
@@ -150,26 +140,24 @@ export default function JobTracker() {
         </div>
 
         {/* Quick Metrics Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <MetricCard
-            label="Total Applied"
-            value={stats.total}
+            label="Total"
+            value={applications.length}
             icon={Briefcase}
             color="slate"
           />
-          {METRIC_STATUSES.map((status) => {
-            const option = STATUS_BY_VALUE[status];
-            return (
-              <MetricCard
-                key={status}
-                label={option.label}
-                value={stats.byStatus[status] ?? 0}
-                icon={option.icon}
-                color={option.color}
-                total={stats.total}
-              />
-            );
-          })}
+          {groupStats.map((group) => (
+            <MetricCard
+              key={group.id}
+              label={group.label}
+              value={group.count}
+              icon={group.icon}
+              color={group.color}
+              total={applications.length}
+              breakdown={group.breakdown}
+            />
+          ))}
         </div>
 
         <JobApplicationTable

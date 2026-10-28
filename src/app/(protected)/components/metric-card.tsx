@@ -8,6 +8,7 @@ interface MetricCardProps {
   icon: LucideIcon;
   color?: StatusColor;
   total?: number;
+  breakdown?: { label: string; count: number }[];
 }
 
 export function MetricCard({
@@ -16,6 +17,7 @@ export function MetricCard({
   icon: Icon,
   color = "slate",
   total,
+  breakdown,
 }: MetricCardProps) {
   const styles = COLOR_STYLES[color];
   const percentage =
@@ -40,6 +42,13 @@ export function MetricCard({
               </span>
             )}
           </div>
+          {breakdown && breakdown.length > 0 && (
+            <p className={`text-xs ${styles.label}`}>
+              {breakdown
+                .map((item) => `${item.count} ${item.label.toLowerCase()}`)
+                .join(" · ")}
+            </p>
+          )}
         </div>
       </CardContent>
 

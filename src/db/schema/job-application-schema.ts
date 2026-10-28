@@ -13,6 +13,7 @@ import { user } from "./auth-schema";
 export enum ApplicationStatus {
   APPLIED = "applied",
   INTERVIEWING = "interviewing",
+  INTERVIEWED = "interviewed",
   OFFERED = "offered",
   REJECTED = "rejected",
   IGNORED = "ignored",

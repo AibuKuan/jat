@@ -14,7 +14,7 @@ async function ignoreStaleApplications() {
     .where(
       and(
         eq(jobApplications.status, ApplicationStatus.APPLIED),
-        lt(jobApplications.appliedDate, daysAgo(30)),
+        lt(jobApplications.updatedAt, daysAgo(30)),
       ),
     )
     .returning({ id: jobApplications.id });

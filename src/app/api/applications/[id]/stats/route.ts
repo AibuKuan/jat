@@ -60,12 +60,14 @@ export async function GET(
   const [row] = await db
     .select({
       users: countDistinct(jobApplications.userId),
-      interviewed: sql<number>`count(distinct ${jobApplications.userId}) filter (where ${jobApplications.status} in ('interviewing', 'offered'))`.mapWith(
-        Number,
-      ),
-      ignored: sql<number>`count(distinct ${jobApplications.userId}) filter (where ${jobApplications.status} = 'ignored')`.mapWith(
-        Number,
-      ),
+      interviewed:
+        sql<number>`count(distinct ${jobApplications.userId}) filter (where ${jobApplications.status} in ('interviewing', 'interviewed', 'offered'))`.mapWith(
+          Number,
+        ),
+      ignored:
+        sql<number>`count(distinct ${jobApplications.userId}) filter (where ${jobApplications.status} = 'ignored')`.mapWith(
+          Number,
+        ),
     })
     .from(jobApplications)
     .innerJoin(userSettings, eq(userSettings.userId, jobApplications.userId))
