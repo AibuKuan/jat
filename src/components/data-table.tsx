@@ -79,6 +79,11 @@ interface DataTableProps<TData extends RowData, TValue> {
   toolbarEnd?: React.ReactNode;
   onRowClick?: (row: TData) => void;
   rowActions?: (row: TData) => React.ReactNode;
+  getRowId?: (row: TData) => string;
+  bulkActions?: (context: {
+    selectedRows: TData[];
+    clearSelection: () => void;
+  }) => React.ReactNode;
 }
 
 export function DataTable<TData extends RowData, TValue>({
@@ -89,6 +94,8 @@ export function DataTable<TData extends RowData, TValue>({
   toolbarEnd,
   onRowClick,
   rowActions,
+  getRowId,
+  bulkActions,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -139,6 +146,7 @@ export function DataTable<TData extends RowData, TValue>({
   const table = useTable({
     features,
     data: sortedData, // TanStack wont sort the column for some reason.
+    getRowId,
     columns: columns as ColumnDef<FeatureSet, TData, unknown>[],
     state: {
       sorting,
@@ -153,6 +161,11 @@ export function DataTable<TData extends RowData, TValue>({
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
   });
+
+  const selectedRows = table
+    .getFilteredSelectedRowModel()
+    .rows.map((row) => row.original);
+  const clearSelection = () => setRowSelection({});
 
   return (
     <div className="w-full space-y-4">
@@ -177,6 +190,9 @@ export function DataTable<TData extends RowData, TValue>({
             )}
           </div>
           {toolbarActions}
+          {bulkActions &&
+            selectedRows.length > 0 &&
+            bulkActions({ selectedRows, clearSelection })}
         </div>
 
         <div className="ml-auto flex items-center gap-2">

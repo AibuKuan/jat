@@ -22,10 +22,7 @@ import { ApplicationStatus, JobApplication } from "@/db/schema";
 import { MetricCard } from "./components/metric-card";
 import dynamic from "next/dynamic";
 import { ProfileMenu } from "@/components/profile-menu";
-import {
-  getGroupStats,
-  STATUS_OPTIONS,
-} from "@/lib/application-status";
+import { getGroupStats, STATUS_OPTIONS } from "@/lib/application-status";
 import { ApplicationDetailsDialog } from "@/components/application-details-dialog";
 
 const JobApplicationTable = dynamic(
@@ -121,6 +118,33 @@ export default function JobTracker() {
     );
   };
 
+  const handleBulkDelete = async (ids: string[]) => {
+    const res = await fetch("/api/applications/bulk", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids }),
+    });
+    if (!res.ok) return false;
+    setApplications((prev) => prev.filter((app) => !ids.includes(app.id)));
+    return true;
+  };
+
+  const handleBulkStatusChange = async (
+    ids: string[],
+    status: ApplicationStatus,
+  ) => {
+    const res = await fetch("/api/applications/bulk", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids, status }),
+    });
+    if (!res.ok) return false;
+    setApplications((prev) =>
+      prev.map((app) => (ids.includes(app.id) ? { ...app, status } : app)),
+    );
+    return true;
+  };
+
   const groupStats = useMemo(() => getGroupStats(applications), [applications]);
 
   return (
@@ -164,6 +188,8 @@ export default function JobTracker() {
           data={applications}
           onView={setEditingApp}
           onDelete={handleDelete}
+          onBulkDelete={handleBulkDelete}
+          onBulkStatusChange={handleBulkStatusChange}
           toolbarActions={
             <Dialog open={openCreate} onOpenChange={setOpenCreate}>
               <DialogTrigger

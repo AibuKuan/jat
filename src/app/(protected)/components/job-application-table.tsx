@@ -10,13 +10,13 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  ChevronDown,
   ExternalLink,
-  Eye,
   Trash2,
 } from "lucide-react";
 import { ApplicationStatus, type JobApplication } from "@/db/schema";
 import { LocalDateTime } from "@/components/local-date-time";
-import { COLOR_STYLES, STATUS_BY_VALUE } from "@/lib/application-status";
+import { COLOR_STYLES, STATUS_BY_VALUE, STATUS_OPTIONS } from "@/lib/application-status";
 import { AgentSheet } from "@/components/agent-sheet";
 import {
   AlertDialog,
@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type SortableColumn = {
   getIsSorted: () => false | "asc" | "desc";
@@ -64,6 +65,11 @@ interface JobApplicationTableProps {
   data: JobApplication[];
   onView?: (application: JobApplication) => void;
   onDelete?: (id: string) => void;
+  onBulkDelete?: (ids: string[]) => Promise<boolean>;
+  onBulkStatusChange?: (
+    ids: string[],
+    status: ApplicationStatus,
+  ) => Promise<boolean>;
   toolbarActions?: React.ReactNode;
 }
 
@@ -71,6 +77,8 @@ export function JobApplicationTable({
   data,
   onView,
   onDelete,
+  onBulkDelete,
+  onBulkStatusChange,
   toolbarActions,
 }: JobApplicationTableProps) {
   const columns = React.useMemo<
@@ -175,6 +183,19 @@ export function JobApplicationTable({
       toolbarActions={toolbarActions}
       toolbarEnd={<AgentSheet />}
       onRowClick={onView}
+      getRowId={(application) => application.id}
+      bulkActions={
+        onBulkDelete || onBulkStatusChange
+          ? ({ selectedRows, clearSelection }) => (
+              <BulkActions
+                selectedRows={selectedRows}
+                clearSelection={clearSelection}
+                onStatusChange={onBulkStatusChange}
+                onDelete={onBulkDelete}
+              />
+            )
+          : undefined
+      }
       rowActions={
         onDelete
           ? (application) => (
@@ -226,5 +247,95 @@ function DeleteApplicationButton({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+}
+
+function BulkActions({
+  selectedRows,
+  clearSelection,
+  onStatusChange,
+  onDelete,
+}: {
+  selectedRows: JobApplication[];
+  clearSelection: () => void;
+  onStatusChange?: (
+    ids: string[],
+    status: ApplicationStatus,
+  ) => Promise<boolean>;
+  onDelete?: (ids: string[]) => Promise<boolean>;
+}) {
+  const [busy, setBusy] = React.useState(false);
+  const ids = selectedRows.map((application) => application.id);
+
+  async function run(action: () => Promise<boolean>) {
+    setBusy(true);
+    const ok = await action();
+    setBusy(false);
+    if (ok) clearSelection();
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="whitespace-nowrap text-sm text-muted-foreground">
+        {ids.length} selected
+      </span>
+
+      {onStatusChange && (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={<Button variant="outline" size="sm" disabled={busy} />}
+          >
+            Set status
+            <ChevronDown className="h-4 w-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            {STATUS_OPTIONS.map((option) => (
+              <DropdownMenuItem
+                key={option.value}
+                onClick={() => run(() => onStatusChange(ids, option.value))}
+              >
+                <option.icon className="h-4 w-4" />
+                {option.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+
+      {onDelete && (
+        <AlertDialog>
+          <AlertDialogTrigger
+            render={
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={busy}
+                className="text-rose-600 hover:text-rose-600"
+              />
+            }
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Delete {ids.length} application{ids.length === 1 ? "" : "s"}?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                The selected applications will be permanently deleted. This
+                can't be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => run(() => onDelete(ids))}>
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+    </div>
   );
 }
