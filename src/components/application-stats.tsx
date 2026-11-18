@@ -15,11 +15,19 @@ type Stats =
       enoughData: true;
       users: number;
       interviewRate: number;
+      offerRate: number;
       ignoredRate: number;
+      since: string;
     };
 
 const DISCLAIMER =
   "The activity stats for this job posting are based on self-reported, anonymous data from users in our application. Statistics are provided for informational purposes only and may not reflect the employer's official hiring status or complete applicant pool.";
+
+const formatSince = (iso: string) =>
+  new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    year: "numeric",
+  });
 
 function InfoBubble() {
   return (
@@ -90,7 +98,7 @@ export function ApplicationStats({ applicationId }: { applicationId: string }) {
   if (!session || isGuest) {
     return (
       <div className="space-y-1">
-        <h3 className="text-sm font-semibold">Community activity</h3>
+        <h3 className="text-sm font-semibold">Statistics</h3>
         <p className="text-sm text-muted-foreground">
           Create an account to see how other applicants are doing with this
           posting. Guest accounts can't take part in community stats.
@@ -102,7 +110,7 @@ export function ApplicationStats({ applicationId }: { applicationId: string }) {
   if (!optedIn) {
     return (
       <div className="space-y-1">
-        <h3 className="text-sm font-semibold">Community activity</h3>
+        <h3 className="text-sm font-semibold">Statistics</h3>
         <p className="text-sm text-muted-foreground">
           To see how other applicants are doing with this posting, open Account
           from the profile menu and turn on "Share my status anonymously".
@@ -115,7 +123,7 @@ export function ApplicationStats({ applicationId }: { applicationId: string }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-1.5">
-        <h3 className="text-sm font-semibold">Community activity</h3>
+        <h3 className="text-sm font-semibold">Statistics</h3>
         <InfoBubble />
       </div>
 
@@ -125,12 +133,13 @@ export function ApplicationStats({ applicationId }: { applicationId: string }) {
         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
       ) : stats.enoughData ? (
         <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <Tile value={`${stats.interviewRate}%`} label="reached interview" />
+            <Tile value={`${stats.offerRate}%`} label="got an offer" />
             <Tile value={`${stats.ignoredRate}%`} label="no response" />
           </div>
           <p className="text-xs text-muted-foreground">
-            Based on {stats.users} applicants
+            Based on {stats.users} applicants since {formatSince(stats.since)}
           </p>
         </div>
       ) : (

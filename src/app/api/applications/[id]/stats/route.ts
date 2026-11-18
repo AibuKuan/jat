@@ -64,10 +64,17 @@ export async function GET(
         sql<number>`count(distinct ${jobApplications.userId}) filter (where ${jobApplications.status} in ('interviewing', 'interviewed', 'offered'))`.mapWith(
           Number,
         ),
+      offered:
+        sql<number>`count(distinct ${jobApplications.userId}) filter (where ${jobApplications.status} = 'offered')`.mapWith(
+          Number,
+        ),
       ignored:
         sql<number>`count(distinct ${jobApplications.userId}) filter (where ${jobApplications.status} = 'ignored')`.mapWith(
           Number,
         ),
+      since: sql<Date>`min(${jobApplications.appliedDate})`.mapWith(
+        jobApplications.appliedDate,
+      ),
     })
     .from(jobApplications)
     .innerJoin(userSettings, eq(userSettings.userId, jobApplications.userId))
@@ -88,6 +95,8 @@ export async function GET(
     enoughData: true,
     users: row.users,
     interviewRate: Math.round((row.interviewed / row.users) * 100),
+    offerRate: Math.round((row.offered / row.users) * 100),
     ignoredRate: Math.round((row.ignored / row.users) * 100),
+    since: new Date(row.since).toISOString(),
   });
 }
