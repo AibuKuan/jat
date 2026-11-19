@@ -44,6 +44,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 const features = tableFeatures({
   rowSortingFeature,
@@ -66,6 +68,9 @@ const features = tableFeatures({
 
 const INTERACTIVE_SELECTOR =
   "button, a, input, label, select, textarea, [role='checkbox'], [role='switch'], [role='menuitem'], [data-row-click-ignore]";
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const ALL_ROWS = Number.MAX_SAFE_INTEGER;
 
 type FeatureSet = typeof features;
 
@@ -97,14 +102,13 @@ export function DataTable<TData extends RowData, TValue>({
   getRowId,
   bulkActions,
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    [],
-  );
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] =
-    React.useState<ColumnVisibilityState>({});
-  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
-  const [globalFilter, setGlobalFilter] = React.useState("");
+    useState<ColumnVisibilityState>({});
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [globalFilter, setGlobalFilter] = useState("");
+  const [pageSizeOption, setPageSizeOption] = useState("10");
 
   function handleRowClick(
     e: React.MouseEvent<HTMLTableRowElement>,
@@ -124,6 +128,11 @@ export function DataTable<TData extends RowData, TValue>({
   ) {
     if (!onRowClick || e.target !== e.currentTarget) return;
     if (e.key === "Enter") onRowClick(row);
+  }
+
+  function handlePageSizeChange(value: string) {
+    setPageSizeOption(value);
+    table.setPageSize(value === "all" ? ALL_ROWS : Number(value));
   }
 
   // TanStack Table doesn't sort the data, so we do it here.
@@ -301,6 +310,28 @@ export function DataTable<TData extends RowData, TValue>({
           {table.getFilteredRowModel().rows.length} row(s) selected.
         </div>
         <div className="flex items-center space-x-6 lg:space-x-8">
+          <div className="flex items-center space-x-2">
+            <p className="text-sm font-medium">Rows per page</p>
+            <Select
+              value={pageSizeOption}
+              onValueChange={(value) => {
+                if (value) handlePageSizeChange(value);
+              }}
+            >
+              <SelectTrigger className="h-8 w-[84px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZE_OPTIONS.map((size) => (
+                  <SelectItem key={size} value={String(size)}>
+                    {size}
+                  </SelectItem>
+                ))}
+                <SelectItem value="all">All</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="flex items-center space-x-2">
             <p className="text-sm font-medium">Page</p>
             <span className="text-sm font-medium">
