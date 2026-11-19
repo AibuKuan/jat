@@ -271,7 +271,10 @@ export function DataTable<TData extends RowData, TValue>({
                   ))}
                   {rowActions && (
                     <TableCell className="sticky right-0 z-10 w-0 p-0">
-                      <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded-md bg-muted opacity-0 shadow-sm transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-visible:pointer-events-auto group-focus-visible:opacity-100 group-has-[:focus-visible]:pointer-events-auto group-has-[:focus-visible]:opacity-100">
+                      <div
+                        data-row-click-ignore
+                        className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 cursor-default rounded-md bg-muted p-0.5 opacity-0 shadow-sm transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-visible:pointer-events-auto group-focus-visible:opacity-100 group-has-[:focus-visible]:pointer-events-auto group-has-[:focus-visible]:opacity-100"
+                      >
                         {rowActions(row.original)}
                       </div>
                     </TableCell>

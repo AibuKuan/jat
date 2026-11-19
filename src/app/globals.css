@@ -127,4 +127,11 @@
   html {
     @apply font-sans;
   }
+
+  /* Transform cursors into pointers on button hover */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  /*  */
 }

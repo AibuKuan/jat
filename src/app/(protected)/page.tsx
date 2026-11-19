@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Briefcase } from "lucide-react";
 import { ApplicationStatus, JobApplication } from "@/db/schema";
-import { MetricCard } from "./components/metric-card";
+import { MetricCard } from "../../components/metric-card";
 import dynamic from "next/dynamic";
 import { ProfileMenu } from "@/components/profile-menu";
 import { getGroupStats, STATUS_OPTIONS } from "@/lib/application-status";
@@ -27,7 +27,7 @@ import { ApplicationDetailsDialog } from "@/components/application-details-dialo
 
 const JobApplicationTable = dynamic(
   () =>
-    import("./components/job-application-table").then(
+    import("../../components/job-application-table").then(
       (mod) => mod.JobApplicationTable,
     ),
   {
