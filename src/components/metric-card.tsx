@@ -21,23 +21,29 @@ export function MetricCard({
 }: MetricCardProps) {
   const styles = COLOR_STYLES[color];
   const percentage =
-    total === undefined ? null : total > 0 ? Math.round((value / total) * 100) : 0;
+    total === undefined
+      ? null
+      : total > 0
+        ? Math.round((value / total) * 100)
+        : 0;
 
   return (
     <Card
       className={`group relative overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${styles.card}`}
     >
-      <CardContent className="p-5 flex items-center justify-between relative z-10">
-        <div className="space-y-1">
-          <p className={`text-xs font-semibold uppercase tracking-wider ${styles.label}`}>
+      <CardContent className="relative z-10 p-4">
+        <div className="space-y-0.5">
+          <p
+            className={`text-xs font-semibold uppercase tracking-wider ${styles.label}`}
+          >
             {label}
           </p>
-          <div className="flex items-baseline gap-2">
-            <p className={`text-3xl font-bold tracking-tight ${styles.value}`}>
+          <div className="flex items-baseline gap-1.5">
+            <p className={`text-2xl font-bold tracking-tight ${styles.value}`}>
               {value}
             </p>
             {percentage !== null && (
-              <span className={`text-sm font-medium ${styles.label}`}>
+              <span className={`text-xs font-medium ${styles.label}`}>
                 {percentage}%
               </span>
             )}
@@ -53,8 +59,8 @@ export function MetricCard({
       </CardContent>
 
       <Icon
-        strokeWidth={2.75}
-        className={`absolute -right-4 -bottom-4 w-24 h-24 pointer-events-none -rotate-12 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6 ${styles.watermark}`}
+        strokeWidth={2.5}
+        className={`pointer-events-none absolute -right-3 -bottom-3 h-16 w-16 -rotate-12 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110 ${styles.watermark}`}
       />
     </Card>
   );
