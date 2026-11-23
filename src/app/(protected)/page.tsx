@@ -22,7 +22,11 @@ import { ApplicationStatus, JobApplication } from "@/db/schema";
 import { MetricCard } from "../../components/metric-card";
 import dynamic from "next/dynamic";
 import { ProfileMenu } from "@/components/profile-menu";
-import { getGroupStats, STATUS_OPTIONS } from "@/lib/application-status";
+import {
+  getGroupStats,
+  getStatusDetails,
+  STATUS_OPTIONS,
+} from "@/lib/application-status";
 import { ApplicationDetailsDialog } from "@/components/application-details-dialog";
 
 const JobApplicationTable = dynamic(
@@ -44,6 +48,10 @@ export default function JobTracker() {
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [openCreate, setOpenCreate] = useState(false);
   const [editingApp, setEditingApp] = useState<JobApplication | null>(null);
+  const [visibleApplications, setVisibleApplications] = useState<
+    JobApplication[] | null
+  >(null);
+  const [decimals, setDecimals] = useState(0);
 
   const [formData, setFormData] = useState<{
     jobTitle: string;
@@ -145,7 +153,9 @@ export default function JobTracker() {
     return true;
   };
 
-  const groupStats = useMemo(() => getGroupStats(applications), [applications]);
+  const shown = visibleApplications ?? applications;
+  const groupStats = useMemo(() => getGroupStats(shown), [shown]);
+  const statusDetails = useMemo(() => getStatusDetails(shown), [shown]);
 
   return (
     <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950/50">
@@ -167,9 +177,14 @@ export default function JobTracker() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <MetricCard
             label="Total"
-            value={applications.length}
+            value={shown.length}
             icon={Briefcase}
             color="slate"
+            total={shown.length}
+            showShare={false}
+            statuses={statusDetails}
+            decimals={decimals}
+            onDecimalsChange={setDecimals}
           />
           {groupStats.map((group) => (
             <MetricCard
@@ -178,14 +193,18 @@ export default function JobTracker() {
               value={group.count}
               icon={group.icon}
               color={group.color}
-              total={applications.length}
+              total={shown.length}
               breakdown={group.breakdown}
+              statuses={group.statuses}
+              decimals={decimals}
+              onDecimalsChange={setDecimals}
             />
           ))}
         </div>
 
         <JobApplicationTable
           data={applications}
+          onFilteredRowsChange={setVisibleApplications}
           onView={setEditingApp}
           onDelete={handleDelete}
           onBulkDelete={handleBulkDelete}

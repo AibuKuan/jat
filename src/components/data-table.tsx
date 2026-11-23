@@ -44,8 +44,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 
 const features = tableFeatures({
   rowSortingFeature,
@@ -89,6 +95,7 @@ interface DataTableProps<TData extends RowData, TValue> {
     selectedRows: TData[];
     clearSelection: () => void;
   }) => React.ReactNode;
+  onFilteredRowsChange?: (rows: TData[]) => void;
 }
 
 export function DataTable<TData extends RowData, TValue>({
@@ -101,6 +108,7 @@ export function DataTable<TData extends RowData, TValue>({
   rowActions,
   getRowId,
   bulkActions,
+  onFilteredRowsChange
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -136,7 +144,7 @@ export function DataTable<TData extends RowData, TValue>({
   }
 
   // TanStack Table doesn't sort the data, so we do it here.
-  const sortedData = React.useMemo(() => {
+  const sortedData = useMemo(() => {
     if (!sorting.length) return data;
     const { id, desc } = sorting[0];
     return [...data].sort((a, b) => {
@@ -170,6 +178,13 @@ export function DataTable<TData extends RowData, TValue>({
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
   });
+
+  useEffect(() => {
+    if (!onFilteredRowsChange) return;
+    onFilteredRowsChange(
+      table.getFilteredRowModel().rows.map((row) => row.original),
+    );
+  }, [data, globalFilter, columnFilters, onFilteredRowsChange]);
 
   const selectedRows = table
     .getFilteredSelectedRowModel()

@@ -92,6 +92,14 @@ export interface StatusOption {
   group: StatusGroup;
 }
 
+export interface StatusDetail {
+  value: ApplicationStatus;
+  label: string;
+  icon: LucideIcon;
+  color: StatusColor;
+  count: number;
+}
+
 export const STATUS_OPTIONS: StatusOption[] = [
   { value: ApplicationStatus.APPLIED, label: "Applied", icon: Send, color: "blue", group: "waiting" },
   { value: ApplicationStatus.INTERVIEWING, label: "Interviewing", icon: CalendarClock, color: "purple", group: "action" },
@@ -118,21 +126,43 @@ export const STATUS_GROUPS: GroupOption[] = [
   { id: "closed", label: "Closed", icon: Archive, color: "rose" },
 ];
 
-export function getGroupStats(applications: { status: ApplicationStatus }[]) {
+export function getStatusDetails(
+  applications: { status: ApplicationStatus }[],
+): StatusDetail[] {
   const counts: Partial<Record<ApplicationStatus, number>> = {};
   for (const app of applications) {
     counts[app.status] = (counts[app.status] ?? 0) + 1;
   }
 
+  return STATUS_OPTIONS.map((option) => ({
+    value: option.value,
+    label: option.label,
+    icon: option.icon,
+    color: option.color,
+    count: counts[option.value] ?? 0,
+  }));
+}
+
+export function getGroupStats(applications: { status: ApplicationStatus }[]) {
+  const details = getStatusDetails(applications);
+
   return STATUS_GROUPS.map((group) => {
-    const breakdown = STATUS_OPTIONS.filter((o) => o.group === group.id)
-      .map((o) => ({ label: o.label, count: counts[o.value] ?? 0 }))
-      .filter((item) => item.count > 0);
+    const statuses = details.filter(
+      (detail) => STATUS_BY_VALUE[detail.value].group === group.id,
+    );
 
     return {
       ...group,
-      count: breakdown.reduce((sum, item) => sum + item.count, 0),
-      breakdown,
+      statuses,
+      count: statuses.reduce((sum, status) => sum + status.count, 0),
+      breakdown: statuses
+        .filter((status) => status.count > 0)
+        .map(({ label, count }) => ({ label, count })),
     };
   });
+}
+
+export function formatPercent(value: number, total: number, decimals = 0) {
+  const percent = total > 0 ? (value / total) * 100 : 0;
+  return `${percent.toFixed(decimals)}%`;
 }

@@ -6,17 +6,10 @@ import { DataTable, type DataTableFeatures } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-} from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { ApplicationStatus, type JobApplication } from "@/db/schema";
 import { LocalDateTime } from "@/components/local-date-time";
-import {
-  COLOR_STYLES,
-  STATUS_BY_VALUE,
-} from "@/lib/application-status";
+import { COLOR_STYLES, STATUS_BY_VALUE } from "@/lib/application-status";
 import { AgentSheet } from "@/components/agent-sheet";
 import { TableRowActions } from "./table-row-actions";
 import { BulkActions } from "./bulk-actions";
@@ -61,6 +54,7 @@ interface JobApplicationTableProps {
     status: ApplicationStatus,
   ) => Promise<boolean>;
   toolbarActions?: React.ReactNode;
+  onFilteredRowsChange?: (rows: JobApplication[]) => void;
 }
 
 export function JobApplicationTable({
@@ -70,6 +64,7 @@ export function JobApplicationTable({
   onBulkDelete,
   onBulkStatusChange,
   toolbarActions,
+  onFilteredRowsChange
 }: JobApplicationTableProps) {
   const columns = React.useMemo<
     ColumnDef<DataTableFeatures, JobApplication, any>[]
@@ -168,6 +163,7 @@ export function JobApplicationTable({
       rowActions={(application) => (
         <TableRowActions application={application} onDelete={onDelete} />
       )}
+      onFilteredRowsChange={onFilteredRowsChange}
     />
   );
 }
